@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum
+from functools import cached_property, total_ordering
 from itertools import groupby
+import operator
 from typing import List
 
-CARD_RANK = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"]
+CARD_RANK = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2", "X"]
 
 
 class HandType(Enum):
@@ -17,13 +19,29 @@ class HandType(Enum):
 
 
 @dataclass
+@total_ordering
 class Hand:
     hand: str
     bid: int
+    joker: bool = False
 
-    @property
+    @cached_property
     def type(self):
-        hist = {k: len(list(v)) for k, v in groupby(sorted(self.hand))}
+        if self.joker and "J" in self.hand:
+            hist = {
+                k: len(list(v)) for k, v in groupby(sorted(self.hand.replace("J", "")))
+            }
+            if len(hist.keys()) == 0:
+                return HandType.five_of_a_kind
+
+            most = max(hist.items(), key=operator.itemgetter(1))[0]
+            hist = {
+                k: len(list(v))
+                for k, v in groupby(sorted(self.hand.replace("J", most)))
+            }
+        else:
+            hist = {k: len(list(v)) for k, v in groupby(sorted(self.hand))}
+
         if len(hist.keys()) == 1:
             return HandType.five_of_a_kind
         if len(hist.keys()) == 2:
@@ -43,7 +61,13 @@ class Hand:
     def __lt__(self, other: object):
         if isinstance(other, Hand):
             if self.type.value == other.type.value:
-                pairings = zip(self.hand, other.hand)
+                if self.joker:
+                    pairings = zip(
+                        self.hand.replace("J", "X"),
+                        other.hand.replace("J", "X"),
+                    )
+                else:
+                    pairings = zip(self.hand, other.hand)
                 for pair in pairings:
                     if pair[0] != pair[1]:
                         return CARD_RANK.index(pair[0]) < CARD_RANK.index(pair[1])
@@ -59,23 +83,22 @@ KTJJT 220
 QQQJA 483"""
 
 
-def load_input(data: str):
-    hands = []
+def load_input(data: str, joker: bool = False):
+    loaded_hands: List[Hand] = []
     for line in data.split("\n"):
         parts = line.split(" ")
-        hands.append(Hand(parts[0], int(parts[1], 10)))
+        loaded_hands.append(Hand(parts[0], int(parts[1], 10), joker))
 
-    return hands
+    return loaded_hands
 
 
-
-def total_cards(hands: List[Hand]):
-    return sum([((len(hands) - idx) * hand.bid) for (idx, hand) in enumerate(hands)])
-
+def total_cards(inputhands: List[Hand]):
+    return sum(
+        [((len(inputhands) - idx) * hand.bid) for (idx, hand) in enumerate(inputhands)]
+    )
 
 
 hands = load_input(test_input)
-
 
 sorted_hands = sorted(hands)
 assert sorted_hands == [
@@ -88,6 +111,24 @@ assert sorted_hands == [
 
 assert total_cards(sorted_hands) == 6440, total_cards(sorted_hands)
 
-hands = load_input(open('2023/07/input', 'r', encoding='utf8').read())
+hands = load_input(open("2023/07/input", "r", encoding="utf8").read())
+sorted_hands = sorted(hands)
+print(total_cards(sorted_hands))
+
+
+hands = load_input(test_input, joker=True)
+sorted_hands = sorted(hands)
+assert sorted_hands == [
+    Hand(hand="KTJJT", bid=220, joker=True),
+    Hand(hand="QQQJA", bid=483, joker=True),
+    Hand(hand="T55J5", bid=684, joker=True),
+    Hand(hand="KK677", bid=28, joker=True),
+    Hand(hand="32T3K", bid=765, joker=True),
+], sorted_hands
+
+assert total_cards(sorted_hands) == 5905, total_cards(sorted_hands)
+
+
+hands = load_input(open("2023/07/input", "r", encoding="utf8").read(), joker=True)
 sorted_hands = sorted(hands)
 print(total_cards(sorted_hands))
