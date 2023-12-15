@@ -30,6 +30,7 @@ def calculate_load(rocks: tuple[str, ...], direction: int = 0):
 
     return total
 
+
 @cache
 def roll_rocks(rocks: tuple[str, ...], direction: int = 0):
     if direction in [0, 2]:
@@ -61,6 +62,15 @@ def rotate_pattern(pattern: tuple[str, ...]):
     )
 
 
+@cache
+def cycle(pattern: tuple[str, ...]):
+    pattern = roll_rocks(pattern)
+    pattern = roll_rocks(pattern, 3)
+    pattern = roll_rocks(pattern, 2)
+    pattern = roll_rocks(pattern, 1)
+    return pattern
+
+
 test_data = load_data(test_input)
 
 assert rotate_pattern(rotate_pattern(test_data)) == test_data
@@ -70,14 +80,72 @@ new_rocks = roll_rocks(test_data)
 print(calculate_load(new_rocks))
 
 new_rocks = test_data
-for i in range(1_000_000_000):
-    new_rocks = roll_rocks(new_rocks, i%4)
+new_rocks = cycle(new_rocks)
+assert (
+    "\n".join(new_rocks)
+    == """.....#....
+....#...O#
+...OO##...
+.OO#......
+.....OOO#.
+.O#...O#.#
+....O#....
+......OOOO
+#...O###..
+#..OO#...."""
+)
+
+new_rocks = cycle(new_rocks)
+assert (
+    ("\n".join(new_rocks))
+    == """.....#....
+....#...O#
+.....##...
+..O#......
+.....OOO#.
+.O#...O#.#
+....O#...O
+.......OOO
+#..OO###..
+#.OOO#...O"""
+)
+
+
+new_rocks = cycle(new_rocks)
+assert (
+    ("\n".join(new_rocks))
+    == """.....#....
+....#...O#
+.....##...
+..O#......
+.....OOO#.
+.O#...O#.#
+....O#...O
+.......OOO
+#...O###.O
+#.OOO#...O"""
+)
+
 
 print(calculate_load(new_rocks))
 
-print("")
+# print("")
 
 print("Input data")
 input_data = load_data(open("2023/14_input", "r", encoding="utf8").read())
 rolled_rocks = roll_rocks(input_data)
 print(calculate_load(rolled_rocks))
+
+"""
+new_rocks = test_data
+for _ in range(1000000000):
+    new_rocks = cycle(new_rocks)
+print(calculate_load(new_rocks))
+"""
+print("Input data 2")
+input_data = load_data(open("2023/14_input", "r", encoding="utf8").read())
+
+new_rocks = input_data
+for _ in range(1000000000):
+    new_rocks = cycle(new_rocks)
+print(calculate_load(new_rocks))
