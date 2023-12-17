@@ -1,4 +1,5 @@
 import math
+from dataclasses import dataclass
 
 
 test_input = """2413432311323
@@ -44,11 +45,60 @@ class Cart:
     dy: int = 0
 
 
+@dataclass
+class Node:
+    value: int
+    x: int = 0
+    y: int = 0
+    distance: float = math.inf
+    visited: bool = False
+
+
 def find_path(field: list[list[int]]):
     width = len(field[0])
     height = len(field)
 
     value_map = [[0] * width for _ in range(height)]
+
+    nodes = [[Node(field[y][x], x, y) for x in range(width)] for y in range(height)]
+    unvisited_nodes = set(
+        (node.x, node.y) for row in nodes for node in row if not node.visited
+    )
+
+    current = nodes[0][0]
+    current.distance = 0
+
+    neighbouring = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+    while unvisited_nodes:
+        print(current.x, current.y)
+        neighbours = [
+            nodes[current.x + n[0]][current.y + n[1]]
+            for n in neighbouring
+            if current.x + n[0] < width
+            and current.y + n[1] < height
+            and current.x + n[0] >= 0
+            and current.y + n[1] >= 0
+        ]
+        neighbours = [n for n in neighbours if not n.visited]
+
+        min_dist = math.inf
+        for neighbour in neighbours:
+            neighbour.distance = min(
+                neighbour.distance, current.distance + neighbour.value
+            )
+            min_dist = min(min_dist, neighbour.distance)
+        current.visited = True
+        unvisited_nodes.remove((current.x, current.y))
+        sorted_neighbours = list(
+            sorted([n for n in neighbours if not n.visited], key=lambda x: x.distance)
+        )
+        if sorted_neighbours:
+            current = sorted_neighbours[0]
+        else:
+            break
+
+    print(nodes)
+    return
 
     for y in range(height - 1, -1, -1):
         for x in range(width - 1, -1, -1):
